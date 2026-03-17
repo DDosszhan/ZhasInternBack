@@ -44,13 +44,13 @@ public class StudentProfileService {
                 studentProfile.getId(),
                 studentProfile.getFullName(),
                 studentProfile.getBio(),
-                null,
-                null,
-                null,
-                null,
+                studentProfile.getSchool(),
+                studentProfile.getGrade(),
+                studentProfile.getCity(),
+                studentProfile.getPortfolio(),
                 studentProfile.getEmail(),
                 List.of(),
-                null
+                studentProfile.getCreatedAt()
         );
     }
 }
