@@ -4,6 +4,7 @@ import com.production.ZhasIntern.dto.ApplicationDtos;
 import com.production.ZhasIntern.entity.Application;
 import com.production.ZhasIntern.entity.ApplicationStatus;
 import com.production.ZhasIntern.entity.Internship;
+import com.production.ZhasIntern.entity.UserProfile;
 import com.production.ZhasIntern.repository.ApplicationRepository;
 import com.production.ZhasIntern.repository.InternshipRepository;
 import com.production.ZhasIntern.repository.ProfileRepository;
@@ -90,9 +91,8 @@ public class ApplicationService {
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<UUID, String> studentNamesById = new HashMap<>();
-        profileRepository.findAllById(studentIds)
-                .forEach(profile -> studentNamesById.put(profile.getId(), profile.getFullName()));
+        Map<UUID, String> studentNamesById = profileRepository.findAllById(studentIds).stream()
+                .collect(Collectors.toMap(UserProfile::getId, UserProfile::getFullName));
 
         return page.map(app -> {
             String studentId = app.getStudentId();
