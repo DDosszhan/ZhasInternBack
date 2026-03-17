@@ -11,6 +11,7 @@ import com.production.ZhasIntern.repository.ProfileRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -42,10 +43,10 @@ public class ApplicationService {
 
     public ApplicationDtos.CreateResponse apply(String studentId, UUID internshipId, ApplicationDtos.CreateRequest req) {
         Internship it = internshipRepo.findByIdAndStatus(internshipId, Internship.Status.PUBLISHED)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         if (appRepo.existsByInternshipIdAndStudentId(internshipId, studentId)) {
-            throw new AlreadyAppliedException("You already applied to this internship");
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_APPLIED", "You already applied to this internship");
         }
 
         Map<String, Object> answers = (req != null && req.answers() != null) ? req.answers() : Map.of();
@@ -60,7 +61,7 @@ public class ApplicationService {
             Application saved = appRepo.save(app);
             return new ApplicationDtos.CreateResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
-            throw new AlreadyAppliedException("You already applied to this internship");
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_APPLIED", "You already applied to this internship");
         }
     }
 
@@ -75,7 +76,7 @@ public class ApplicationService {
             Pageable pageable
     ) {
         Internship it = internshipRepo.findByIdAndEmployerId(internshipId, employerId)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         Page<Application> page;
         if (status != null && !status.isBlank()) {
@@ -128,10 +129,10 @@ public class ApplicationService {
             String newStatusRaw
     ) {
         internshipRepo.findByIdAndEmployerId(internshipId, employerId)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         Application app = appRepo.findByIdAndInternshipId(applicationId, internshipId)
-                .orElseThrow(() -> new NotFoundException("Application not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Application not found"));
 
         ApplicationStatus newStatus = parseStatus(newStatusRaw);
 
@@ -155,24 +156,11 @@ public class ApplicationService {
     }
 
     private ApplicationStatus parseStatus(String raw) {
-        if (raw == null) throw new BadRequestException("Status is required");
+        if (raw == null) throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Status is required");
         try {
             return ApplicationStatus.valueOf(raw.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid status. Allowed: SUBMITTED, ACCEPTED, REJECTED");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid status. Allowed: SUBMITTED, ACCEPTED, REJECTED");
         }
-    }
-
-    // Exceptions
-    public static class NotFoundException extends RuntimeException {
-        public NotFoundException(String msg) { super(msg); }
-    }
-
-    public static class AlreadyAppliedException extends RuntimeException {
-        public AlreadyAppliedException(String msg) { super(msg); }
-    }
-
-    public static class BadRequestException extends RuntimeException {
-        public BadRequestException(String msg) { super(msg); }
     }
 }
