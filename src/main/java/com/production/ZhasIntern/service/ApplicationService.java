@@ -6,24 +6,35 @@ import com.production.ZhasIntern.entity.ApplicationStatus;
 import com.production.ZhasIntern.entity.Internship;
 import com.production.ZhasIntern.repository.ApplicationRepository;
 import com.production.ZhasIntern.repository.InternshipRepository;
+import com.production.ZhasIntern.exception.ApiException;
+import com.production.ZhasIntern.repository.ProfileRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ApplicationService {
 
     private final ApplicationRepository appRepo;
     private final InternshipRepository internshipRepo;
+    private final ProfileRepository profileRepository;
 
-    public ApplicationService(ApplicationRepository appRepo, InternshipRepository internshipRepo) {
+    public ApplicationService(
+            ApplicationRepository appRepo,
+            InternshipRepository internshipRepo,
+            ProfileRepository profileRepository
+    ) {
         this.appRepo = appRepo;
         this.internshipRepo = internshipRepo;
+        this.profileRepository = profileRepository;
     }
 
     // =========================
@@ -32,10 +43,10 @@ public class ApplicationService {
 
     public ApplicationDtos.CreateResponse apply(String studentId, UUID internshipId, ApplicationDtos.CreateRequest req) {
         Internship it = internshipRepo.findByIdAndStatus(internshipId, Internship.Status.PUBLISHED)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         if (appRepo.existsByInternshipIdAndStudentId(internshipId, studentId)) {
-            throw new AlreadyAppliedException("You already applied to this internship");
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_APPLIED", "You already applied to this internship");
         }
 
         Map<String, Object> answers = (req != null && req.answers() != null) ? req.answers() : Map.of();
@@ -50,7 +61,7 @@ public class ApplicationService {
             Application saved = appRepo.save(app);
             return new ApplicationDtos.CreateResponse(saved.getId());
         } catch (DataIntegrityViolationException e) {
-            throw new AlreadyAppliedException("You already applied to this internship");
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_APPLIED", "You already applied to this internship");
         }
     }
 
@@ -65,7 +76,7 @@ public class ApplicationService {
             Pageable pageable
     ) {
         Internship it = internshipRepo.findByIdAndEmployerId(internshipId, employerId)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         Page<Application> page;
         if (status != null && !status.isBlank()) {
@@ -75,15 +86,37 @@ public class ApplicationService {
             page = appRepo.findByInternshipIdOrderByCreatedAtDesc(internshipId, pageable);
         }
 
-        return page.map(app -> new ApplicationDtos.EmployerListItem(
-                app.getId(),
-                app.getInternshipId(),
-                it.getTitle(),
-                app.getStudentId(),
-                app.getStatus().name(),          // or change DTO type to ApplicationStatus
-                app.getCreatedAt(),
-                app.getAnswers() != null ? app.getAnswers() : Map.of()
-        ));
+        Set<UUID> studentIds = page.getContent().stream()
+                .map(Application::getStudentId)
+                .map(this::parseUuidOrNull)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> studentNamesById = new HashMap<>();
+        profileRepository.findAllById(studentIds)
+                .forEach(profile -> studentNamesById.put(profile.getId(), profile.getFullName()));
+
+        return page.map(app -> {
+            String studentId = app.getStudentId();
+            UUID studentUuid = parseUuidOrNull(studentId);
+            String studentFullName = studentUuid == null ? null : studentNamesById.get(studentUuid);
+
+            String studentProfilePath = (studentId != null && !studentId.isBlank())
+                    ? "/students/" + studentId
+                    : null;
+
+            return new ApplicationDtos.EmployerListItem(
+                    app.getId(),
+                    app.getInternshipId(),
+                    it.getTitle(),
+                    studentId,
+                    studentFullName,
+                    studentProfilePath,
+                    app.getStatus().name(),
+                    app.getCreatedAt(),
+                    app.getAnswers() != null ? app.getAnswers() : Map.of()
+            );
+        });
     }
 
     // =========================
@@ -97,10 +130,10 @@ public class ApplicationService {
             String newStatusRaw
     ) {
         internshipRepo.findByIdAndEmployerId(internshipId, employerId)
-                .orElseThrow(() -> new NotFoundException("Internship not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Internship not found"));
 
         Application app = appRepo.findByIdAndInternshipId(applicationId, internshipId)
-                .orElseThrow(() -> new NotFoundException("Application not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Application not found"));
 
         ApplicationStatus newStatus = parseStatus(newStatusRaw);
 
@@ -114,25 +147,21 @@ public class ApplicationService {
         return new ApplicationDtos.UpdateStatusResponse(saved.getId(), saved.getStatus().name(), saved.getUpdatedAt());
     }
 
-    private ApplicationStatus parseStatus(String raw) {
-        if (raw == null) throw new BadRequestException("Status is required");
+    private UUID parseUuidOrNull(String raw) {
+        if (raw == null || raw.isBlank()) return null;
         try {
-            return ApplicationStatus.valueOf(raw.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid status. Allowed: SUBMITTED, ACCEPTED, REJECTED");
+            return UUID.fromString(raw.trim());
+        } catch (IllegalArgumentException ex) {
+            return null;
         }
     }
 
-    // Exceptions
-    public static class NotFoundException extends RuntimeException {
-        public NotFoundException(String msg) { super(msg); }
-    }
-
-    public static class AlreadyAppliedException extends RuntimeException {
-        public AlreadyAppliedException(String msg) { super(msg); }
-    }
-
-    public static class BadRequestException extends RuntimeException {
-        public BadRequestException(String msg) { super(msg); }
+    private ApplicationStatus parseStatus(String raw) {
+        if (raw == null) throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Status is required");
+        try {
+            return ApplicationStatus.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid status. Allowed: SUBMITTED, ACCEPTED, REJECTED");
+        }
     }
 }
