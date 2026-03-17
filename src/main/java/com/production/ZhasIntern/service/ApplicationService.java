@@ -5,6 +5,7 @@ import com.production.ZhasIntern.entity.Application;
 import com.production.ZhasIntern.entity.ApplicationStatus;
 import com.production.ZhasIntern.entity.Internship;
 import com.production.ZhasIntern.entity.UserProfile;
+import com.production.ZhasIntern.exception.ApiException;
 import com.production.ZhasIntern.repository.ApplicationRepository;
 import com.production.ZhasIntern.repository.InternshipRepository;
 import com.production.ZhasIntern.repository.ProfileRepository;
