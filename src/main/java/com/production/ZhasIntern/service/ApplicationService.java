@@ -93,12 +93,21 @@ public class ApplicationService {
                 .collect(Collectors.toSet());
 
         Map<UUID, String> studentNamesById = profileRepository.findAllById(studentIds).stream()
-                .collect(Collectors.toMap(UserProfile::getId, UserProfile::getFullName));
+                .collect(Collectors.toMap(
+                        UserProfile::getId,
+                        p -> p.getFullName() != null ? p.getFullName() : "",
+                        (left, right) -> left
+                ));
 
         return page.map(app -> {
             String studentId = app.getStudentId();
             UUID studentUuid = parseUuidOrNull(studentId);
             String studentFullName = studentUuid == null ? null : studentNamesById.get(studentUuid);
+            if (studentFullName != null && studentFullName.isBlank()) {
+                studentFullName = null;
+            }
+
+            String statusName = app.getStatus() != null ? app.getStatus().name() : "SUBMITTED";
 
             String studentProfilePath = (studentId != null && !studentId.isBlank())
                     ? "/students/" + studentId
@@ -111,7 +120,7 @@ public class ApplicationService {
                     studentId,
                     studentFullName,
                     studentProfilePath,
-                    app.getStatus().name(),
+                    statusName,
                     app.getCreatedAt(),
                     app.getAnswers() != null ? app.getAnswers() : Map.of()
             );
