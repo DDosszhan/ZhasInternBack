@@ -6,6 +6,7 @@ import com.production.ZhasIntern.entity.ApplicationStatus;
 import com.production.ZhasIntern.entity.Internship;
 import com.production.ZhasIntern.repository.ApplicationRepository;
 import com.production.ZhasIntern.repository.InternshipRepository;
+import com.production.ZhasIntern.repository.ProfileRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,17 +14,25 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ApplicationService {
 
     private final ApplicationRepository appRepo;
     private final InternshipRepository internshipRepo;
+    private final ProfileRepository profileRepository;
 
-    public ApplicationService(ApplicationRepository appRepo, InternshipRepository internshipRepo) {
+    public ApplicationService(
+            ApplicationRepository appRepo,
+            InternshipRepository internshipRepo,
+            ProfileRepository profileRepository
+    ) {
         this.appRepo = appRepo;
         this.internshipRepo = internshipRepo;
+        this.profileRepository = profileRepository;
     }
 
     // =========================
@@ -75,15 +84,37 @@ public class ApplicationService {
             page = appRepo.findByInternshipIdOrderByCreatedAtDesc(internshipId, pageable);
         }
 
-        return page.map(app -> new ApplicationDtos.EmployerListItem(
-                app.getId(),
-                app.getInternshipId(),
-                it.getTitle(),
-                app.getStudentId(),
-                app.getStatus().name(),          // or change DTO type to ApplicationStatus
-                app.getCreatedAt(),
-                app.getAnswers() != null ? app.getAnswers() : Map.of()
-        ));
+        Set<UUID> studentIds = page.getContent().stream()
+                .map(Application::getStudentId)
+                .map(this::parseUuidOrNull)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> studentNamesById = new HashMap<>();
+        profileRepository.findAllById(studentIds)
+                .forEach(profile -> studentNamesById.put(profile.getId(), profile.getFullName()));
+
+        return page.map(app -> {
+            String studentId = app.getStudentId();
+            UUID studentUuid = parseUuidOrNull(studentId);
+            String studentFullName = studentUuid == null ? null : studentNamesById.get(studentUuid);
+
+            String studentProfilePath = (studentId != null && !studentId.isBlank())
+                    ? "/students/" + studentId
+                    : null;
+
+            return new ApplicationDtos.EmployerListItem(
+                    app.getId(),
+                    app.getInternshipId(),
+                    it.getTitle(),
+                    studentId,
+                    studentFullName,
+                    studentProfilePath,
+                    app.getStatus().name(),
+                    app.getCreatedAt(),
+                    app.getAnswers() != null ? app.getAnswers() : Map.of()
+            );
+        });
     }
 
     // =========================
@@ -112,6 +143,15 @@ public class ApplicationService {
         Application saved = appRepo.save(app); // updatedAt will be set by @PreUpdate
 
         return new ApplicationDtos.UpdateStatusResponse(saved.getId(), saved.getStatus().name(), saved.getUpdatedAt());
+    }
+
+    private UUID parseUuidOrNull(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return UUID.fromString(raw.trim());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     private ApplicationStatus parseStatus(String raw) {

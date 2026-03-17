@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/profile/role").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/applications/*/messages").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/applications/*/messages").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/students/*").authenticated()
 
                         .anyRequest().authenticated()
                 )
