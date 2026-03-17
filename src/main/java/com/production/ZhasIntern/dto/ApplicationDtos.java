@@ -21,6 +21,8 @@ public class ApplicationDtos {
             UUID internshipId,
             String internshipTitle,
             String studentId,
+            String studentFullName,
+            String studentProfilePath,
             String status,
             Instant createdAt,
             Map<String, Object> answers

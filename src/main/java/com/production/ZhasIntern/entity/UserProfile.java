@@ -22,4 +22,3 @@ public class UserProfile {
 
     private String bio; // О себе или о компании
 }
-
