@@ -124,7 +124,7 @@ public class KatoDirectoryService {
                 ((tools.jackson.databind.node.ObjectNode) sourceNode).put("size", size);
             }
             sourceWithPaging = objectMapper.writeValueAsString(sourceNode);
-        } catch (JacksonException ex) {
+        } catch (JsonProcessingException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "KATO_QUERY_ERROR", "Cannot build KATO query");
         }
 
