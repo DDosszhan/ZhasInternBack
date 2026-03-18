@@ -200,7 +200,12 @@ public class SchoolDirectoryService {
         for (String key : keys) {
             JsonNode value = node.get(key);
             if (value != null && !value.isNull()) {
-                String text = value.asText();
+                String text;
+                try {
+                    text = value.asText();
+                } catch (Exception ex) {
+                    continue;
+                }
                 if (text != null && !text.isBlank()) {
                     return text.trim();
                 }
