@@ -27,6 +27,8 @@ public class SchoolDirectoryService {
 
     private static final int DEFAULT_LIMIT = 100;
     private static final int MAX_LIMIT = 300;
+    private static final int FETCH_BATCH_SIZE = 1000;
+    private static final int MAX_FETCH_PAGES = 50;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -184,11 +186,46 @@ public class SchoolDirectoryService {
     private JsonNode loadPayload() {
         validateConfig();
 
+        List<JsonNode> allItems = new ArrayList<>();
+        int offset = 0;
+        String previousPageSignature = null;
+        for (int page = 0; page < MAX_FETCH_PAGES; page++) {
+            JsonNode pageItems = loadPayloadPage(offset, FETCH_BATCH_SIZE);
+            if (pageItems == null || !pageItems.isArray() || pageItems.isEmpty()) {
+                break;
+            }
+
+            String currentPageSignature = buildPageSignature(pageItems);
+            if (currentPageSignature.equals(previousPageSignature)) {
+                break;
+            }
+            previousPageSignature = currentPageSignature;
+
+            pageItems.forEach(allItems::add);
+
+            if (pageItems.size() < FETCH_BATCH_SIZE) {
+                break;
+            }
+            offset += FETCH_BATCH_SIZE;
+        }
+
+        if (allItems.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Schools directory returned invalid payload");
+        }
+
+        return new tools.jackson.databind.node.ArrayNode(
+                tools.jackson.databind.node.JsonNodeFactory.instance,
+                allItems
+        );
+    }
+
+    private JsonNode loadPayloadPage(int offset, int limit) {
         final String url;
         try {
             url = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("apiKey", apiKey)
-                    .queryParam("limit", MAX_LIMIT)
+                    .queryParam("limit", limit)
+                    .queryParam("offset", offset)
                     .encode(StandardCharsets.UTF_8)
                     .toUriString();
         } catch (IllegalArgumentException ex) {
@@ -209,6 +246,12 @@ public class SchoolDirectoryService {
         }
 
         return recordsNode;
+    }
+
+    private String buildPageSignature(JsonNode pageItems) {
+        JsonNode first = pageItems.get(0);
+        JsonNode last = pageItems.get(pageItems.size() - 1);
+        return first.toString() + "|" + last.toString() + "|" + pageItems.size();
     }
 
     private void validateConfig() {
