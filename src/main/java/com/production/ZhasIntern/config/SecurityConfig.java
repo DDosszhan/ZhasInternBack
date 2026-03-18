@@ -80,6 +80,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/employer/internships/*/applications").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/employer/internships/*/applications/*/status").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/profile/role").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/profile/student-details").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/applications/*/messages").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/applications/*/messages").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/students/*").authenticated()
