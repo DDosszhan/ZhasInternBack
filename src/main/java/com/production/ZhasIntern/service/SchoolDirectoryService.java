@@ -1,6 +1,6 @@
 package com.production.ZhasIntern.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.production.ZhasIntern.dto.SchoolDtos;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class SchoolDirectoryService {
     public SchoolDtos.SchoolListResponse listSchools(
             String search,
             String region,
-            String area,
+            String district,
             String locality,
             Integer limit
     ) {
@@ -48,12 +48,12 @@ public class SchoolDirectoryService {
 
         String normalizedSearch = normalize(search);
         String normalizedRegion = normalize(region);
-        String normalizedArea = normalize(area);
+        String normalizedDistrict = normalize(district);
         String normalizedLocality = normalize(locality);
 
         List<SchoolDtos.SchoolOption> schools = records.stream()
                 .filter(record -> matchesEquals(normalizedRegion, record.normalizedRegion()))
-                .filter(record -> matchesEquals(normalizedArea, record.normalizedArea()))
+                .filter(record -> matchesEquals(normalizedDistrict, record.normalizedArea()))
                 .filter(record -> matchesEquals(normalizedLocality, record.normalizedLocality()))
                 .filter(record -> matchesSearch(normalizedSearch, record))
                 .sorted(Comparator.comparing(SchoolRecord::name, String.CASE_INSENSITIVE_ORDER))
@@ -62,7 +62,7 @@ public class SchoolDirectoryService {
                         record.id(),
                         record.name(),
                         record.region(),
-                        record.area(),
+                        record.district(),
                         record.locality()
                 ))
                 .toList();
@@ -70,13 +70,13 @@ public class SchoolDirectoryService {
         return new SchoolDtos.SchoolListResponse(schools);
     }
 
-    public SchoolDtos.SchoolFilterOptionsResponse listFilterOptions(String region, String area) {
+    public SchoolDtos.SchoolFilterOptionsResponse listFilterOptions(String region, String district) {
         List<SchoolRecord> records = loadRecords();
         String normalizedRegion = normalize(region);
-        String normalizedArea = normalize(area);
+        String normalizedDistrict = normalize(district);
 
         Set<String> regions = new LinkedHashSet<>();
-        Set<String> areas = new LinkedHashSet<>();
+        Set<String> districts = new LinkedHashSet<>();
         Set<String> localities = new LinkedHashSet<>();
 
         for (SchoolRecord record : records) {
@@ -84,12 +84,12 @@ public class SchoolDirectoryService {
                 regions.add(record.region());
             }
 
-            if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
-                areas.add(record.area());
+            if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.district() != null) {
+                districts.add(record.district());
             }
 
             if (matchesEquals(normalizedRegion, record.normalizedRegion())
-                    && matchesEquals(normalizedArea, record.normalizedArea())
+                    && matchesEquals(normalizedDistrict, record.normalizedArea())
                     && record.locality() != null) {
                 localities.add(record.locality());
             }
@@ -97,9 +97,54 @@ public class SchoolDirectoryService {
         }
         return new SchoolDtos.SchoolFilterOptionsResponse(
                 regions.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
-                areas.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                districts.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
                 localities.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()
         );
+    }
+
+
+    public SchoolDtos.RegionListResponse listRegions() {
+        List<SchoolRecord> records = loadRecords();
+        List<String> regions = records.stream()
+                .map(SchoolRecord::region)
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+
+        return new SchoolDtos.RegionListResponse(regions);
+    }
+
+    public SchoolDtos.DistrictListResponse listDistricts(String region) {
+        List<SchoolRecord> records = loadRecords();
+        String normalizedRegion = normalize(region);
+
+        List<String> districts = records.stream()
+                .filter(record -> matchesEquals(normalizedRegion, record.normalizedRegion()))
+                .map(SchoolRecord::district)
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+
+        return new SchoolDtos.DistrictListResponse(districts);
+    }
+
+    public SchoolDtos.LocalityListResponse listLocalities(String region, String district) {
+        List<SchoolRecord> records = loadRecords();
+        String normalizedRegion = normalize(region);
+        String normalizedDistrict = normalize(district);
+
+        List<String> localities = records.stream()
+                .filter(record -> matchesEquals(normalizedRegion, record.normalizedRegion()))
+                .filter(record -> matchesEquals(normalizedDistrict, record.normalizedArea()))
+                .map(SchoolRecord::locality)
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+
+        return new SchoolDtos.LocalityListResponse(localities);
     }
 
     private List<SchoolRecord> loadRecords() {
@@ -257,7 +302,7 @@ public class SchoolDirectoryService {
             String id,
             String name,
             String region,
-            String area,
+            String district,
             String locality,
             String normalizedName,
             String normalizedRegion,
