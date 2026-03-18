@@ -7,6 +7,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -53,6 +54,14 @@ public class RestExceptionHandler {
     public ResponseEntity<ApiError> handleConstraint(ConstraintViolationException ex) {
         return ResponseEntity.badRequest()
                 .body(ApiError.of("VALIDATION_ERROR", ex.getMessage()));
+    }
+
+    @org.springframework.web.bind.annotation.ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String parameterName = ex.getName() == null ? "parameter" : ex.getName();
+        String message = "Invalid value for '" + parameterName + "'";
+        return ResponseEntity.badRequest()
+                .body(ApiError.of("VALIDATION_ERROR", message));
     }
 
     @org.springframework.web.bind.annotation.ExceptionHandler(AccessDeniedException.class)
