@@ -3,7 +3,6 @@ package com.production.ZhasIntern.service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import com.production.ZhasIntern.dto.KatoDtos;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -122,30 +120,28 @@ public class KatoDirectoryService {
         try {
             JsonNode sourceNode = objectMapper.readTree(sourceQuery);
             if (sourceNode.isObject()) {
-                ObjectNode objectNode = (ObjectNode) sourceNode;
-                objectNode.put("from", from);
-                objectNode.put("size", size);
+                ((tools.jackson.databind.node.ObjectNode) sourceNode).put("from", from);
+                ((tools.jackson.databind.node.ObjectNode) sourceNode).put("size", size);
             }
             sourceWithPaging = objectMapper.writeValueAsString(sourceNode);
         } catch (JacksonException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "KATO_QUERY_ERROR", "Cannot build KATO query");
         }
 
-        final URI uri;
+        final String url;
         try {
-            uri = UriComponentsBuilder.fromUriString(katoBaseUrl)
+            url = UriComponentsBuilder.fromUriString(katoBaseUrl)
                     .queryParam("apiKey", katoApiKey)
                     .queryParam("source", sourceWithPaging)
                     .encode(StandardCharsets.UTF_8)
-                    .build(false)
-                    .toUri();
+                    .toUriString();
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "KATO_CONFIG_ERROR", "KATO directory is not configured properly");
         }
 
         final JsonNode payload;
         try {
-            payload = restTemplate.getForObject(uri, JsonNode.class);
+            payload = restTemplate.getForObject(url, JsonNode.class);
         } catch (RestClientException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "KATO_UNAVAILABLE", "Cannot load KATO directory now");
         }
