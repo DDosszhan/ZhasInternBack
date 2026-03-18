@@ -85,15 +85,15 @@ public class SchoolDirectoryService {
             if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
                 areas.add(record.area());
             }
-        }
+
 
             if (matchesEquals(normalizedRegion, record.normalizedRegion())
                     && matchesEquals(normalizedArea, record.normalizedArea())
                     && record.locality() != null) {
                 localities.add(record.locality());
             }
-        }
 
+        }
         return new SchoolDtos.SchoolFilterOptionsResponse(
                 regions.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
                 areas.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
