@@ -3,6 +3,7 @@ package com.production.ZhasIntern.service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.production.ZhasIntern.dto.KatoDtos;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -120,8 +121,9 @@ public class KatoDirectoryService {
         try {
             JsonNode sourceNode = objectMapper.readTree(sourceQuery);
             if (sourceNode.isObject()) {
-                ((tools.jackson.databind.node.ObjectNode) sourceNode).put("from", from);
-                ((tools.jackson.databind.node.ObjectNode) sourceNode).put("size", size);
+                ObjectNode objectNode = (ObjectNode) sourceNode;
+                objectNode.put("from", from);
+                objectNode.put("size", size);
             }
             sourceWithPaging = objectMapper.writeValueAsString(sourceNode);
         } catch (JacksonException ex) {
