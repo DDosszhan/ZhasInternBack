@@ -44,10 +44,6 @@ public class ProfileController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody ProfileDtos.UpdateStudentDetailsRequest request
     ) {
-        if (request == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Request body is required");
-        }
-
         String userId = jwt.getSubject();
         UserProfile profile = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Profile not found"));
