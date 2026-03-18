@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,79 +33,60 @@ public class SchoolDirectoryService {
     private String apiKey;
 
     public SchoolDtos.SchoolListResponse listSchools(String search, Integer limit) {
-        try {
-            int resolvedLimit = sanitizeLimit(limit);
-            String normalizedSearch = normalize(search);
-            JsonNode payload = loadPayload();
-            JsonNode rows = unwrapRows(payload);
+        int resolvedLimit = sanitizeLimit(limit);
 
-            List<SchoolDtos.SchoolOption> schools = new ArrayList<>();
-            for (JsonNode node : rows) {
-                String name = extractText(node,
-                        "school", "school_name", "name", "name_rus", "name_kz", "name_kaz", "title", "organization_name", "naimenovanie");
-
-                if (name == null || name.isBlank()) {
-                    continue;
-                }
-
-                if (normalizedSearch != null && !name.toLowerCase(Locale.ROOT).contains(normalizedSearch)) {
-                    continue;
-                }
-
-                String id = extractText(node, "id", "_id", "school_id", "bin");
-                if (id == null || id.isBlank()) {
-                    id = name;
-                }
-
-                schools.add(new SchoolDtos.SchoolOption(
-                        id,
-                        name,
-                        extractText(node, "region", "obl_name", "oblast", "region_name", "region_kz"),
-                        extractText(node, "district", "audan", "district_name", "area", "area_kz"),
-                        extractText(node, "city", "sity", "qala", "city_name", "sity_kz")
-                ));
-            }
-
-            List<SchoolDtos.SchoolOption> limited = schools.stream()
-                    .sorted(Comparator.comparing(SchoolDtos.SchoolOption::name, String.CASE_INSENSITIVE_ORDER))
-                    .limit(resolvedLimit)
-                    .collect(Collectors.toList());
-
-            return new SchoolDtos.SchoolListResponse(limited);
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Cannot parse schools directory response");
-        }
-    }
-
-    private JsonNode loadPayload() {
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
+        String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("apiKey", apiKey)
                 .queryParam("limit", MAX_LIMIT)
                 .encode(StandardCharsets.UTF_8)
                 .toUriString();
 
+        JsonNode payload;
         try {
-            JsonNode payload = restTemplate.getForObject(url, JsonNode.class);
-            if (payload == null) {
-                throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Schools directory returned empty payload");
-            }
-            return payload;
+            payload = restTemplate.getForObject(url, JsonNode.class);
         } catch (RestClientException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_UNAVAILABLE", "Cannot load schools directory now");
         }
-    }
 
-    private JsonNode unwrapRows(JsonNode payload) {
-        if (payload.isArray()) {
-            return payload;
+        if (payload == null || !payload.isArray()) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Schools directory returned invalid payload");
         }
-        JsonNode data = payload.get("data");
-        if (data != null && data.isArray()) {
-            return data;
+
+        String normalizedSearch = normalize(search);
+        List<SchoolDtos.SchoolOption> schools = new ArrayList<>();
+
+        for (JsonNode node : payload) {
+            String name = extractText(node,
+                    "school", "school_name", "name", "name_rus", "name_kaz", "title", "organization_name", "naimenovanie");
+
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+
+            if (normalizedSearch != null && !name.toLowerCase(Locale.ROOT).contains(normalizedSearch)) {
+                continue;
+            }
+
+            String id = extractText(node, "id", "_id", "school_id", "bin");
+            if (id == null || id.isBlank()) {
+                id = name;
+            }
+
+            schools.add(new SchoolDtos.SchoolOption(
+                    id,
+                    name,
+                    extractText(node, "region", "obl_name", "oblast", "region_name"),
+                    extractText(node, "district", "audan", "district_name"),
+                    extractText(node, "city", "qala", "city_name")
+            ));
+
+            if (schools.size() >= resolvedLimit) {
+                break;
+            }
         }
-        throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Schools directory returned invalid payload");
+
+        schools.sort(Comparator.comparing(SchoolDtos.SchoolOption::name, String.CASE_INSENSITIVE_ORDER));
+        return new SchoolDtos.SchoolListResponse(schools);
     }
 
     private int sanitizeLimit(Integer limit) {
