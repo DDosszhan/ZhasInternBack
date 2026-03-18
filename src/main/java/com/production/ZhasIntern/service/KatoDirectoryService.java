@@ -1,6 +1,6 @@
 package com.production.ZhasIntern.service;
 
-import tools.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.production.ZhasIntern.dto.KatoDtos;
@@ -168,7 +168,7 @@ public class KatoDirectoryService {
     private String writeQuery(Map<String, Object> root) {
         try {
             return objectMapper.writeValueAsString(root);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "KATO_QUERY_ERROR", "Cannot build KATO query");
         }
     }
