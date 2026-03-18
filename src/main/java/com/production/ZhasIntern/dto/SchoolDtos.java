@@ -15,4 +15,11 @@ public class SchoolDtos {
 
     public record SchoolListResponse(List<SchoolOption> schools) {
     }
+
+    public record SchoolFilterOptionsResponse(
+            List<String> regions,
+            List<String> areas,
+            List<String> localities
+    ) {
+    }
 }

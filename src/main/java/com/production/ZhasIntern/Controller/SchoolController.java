@@ -18,8 +18,19 @@ public class SchoolController {
     @GetMapping
     public SchoolDtos.SchoolListResponse listSchools(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String area,
+            @RequestParam(required = false) String locality,
             @RequestParam(required = false) Integer limit
     ) {
-        return schoolDirectoryService.listSchools(search, limit);
+        return schoolDirectoryService.listSchools(search, region, area, locality, limit);
+    }
+
+    @GetMapping("/filters")
+    public SchoolDtos.SchoolFilterOptionsResponse listFilters(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String area
+    ) {
+        return schoolDirectoryService.listFilterOptions(region, area);
     }
 }
