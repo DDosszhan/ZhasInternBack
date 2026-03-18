@@ -1,6 +1,6 @@
 package com.production.ZhasIntern.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.production.ZhasIntern.dto.SchoolDtos;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
