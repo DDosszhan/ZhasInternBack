@@ -19,18 +19,44 @@ public class SchoolController {
     public SchoolDtos.SchoolListResponse listSchools(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String region,
+            @RequestParam(required = false) String district,
             @RequestParam(required = false) String area,
             @RequestParam(required = false) String locality,
             @RequestParam(required = false) Integer limit
     ) {
-        return schoolDirectoryService.listSchools(search, region, area, locality, limit);
+        String resolvedDistrict = district != null ? district : area;
+        return schoolDirectoryService.listSchools(search, region, resolvedDistrict, locality, limit);
     }
 
     @GetMapping("/filters")
     public SchoolDtos.SchoolFilterOptionsResponse listFilters(
             @RequestParam(required = false) String region,
+            @RequestParam(required = false) String district,
             @RequestParam(required = false) String area
     ) {
-        return schoolDirectoryService.listFilterOptions(region, area);
+        String resolvedDistrict = district != null ? district : area;
+        return schoolDirectoryService.listFilterOptions(region, resolvedDistrict);
+    }
+
+    @GetMapping("/regions")
+    public SchoolDtos.RegionListResponse listRegions() {
+        return schoolDirectoryService.listRegions();
+    }
+
+    @GetMapping("/districts")
+    public SchoolDtos.DistrictListResponse listDistricts(
+            @RequestParam(required = false) String region
+    ) {
+        return schoolDirectoryService.listDistricts(region);
+    }
+
+    @GetMapping("/localities")
+    public SchoolDtos.LocalityListResponse listLocalities(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String area
+    ) {
+        String resolvedDistrict = district != null ? district : area;
+        return schoolDirectoryService.listLocalities(region, resolvedDistrict);
     }
 }
