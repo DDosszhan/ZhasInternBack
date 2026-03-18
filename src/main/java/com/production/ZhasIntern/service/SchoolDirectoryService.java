@@ -35,7 +35,7 @@ public class SchoolDirectoryService {
     public SchoolDtos.SchoolListResponse listSchools(String search, Integer limit) {
         int resolvedLimit = sanitizeLimit(limit);
 
-        String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
+        String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("apiKey", apiKey)
                 .queryParam("limit", MAX_LIMIT)
                 .encode(StandardCharsets.UTF_8)
