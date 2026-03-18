@@ -41,75 +41,63 @@ public class SchoolDirectoryService {
             String locality,
             Integer limit
     ) {
-        try {
-            int resolvedLimit = sanitizeLimit(limit);
-            List<SchoolRecord> records = loadRecords();
+        int resolvedLimit = sanitizeLimit(limit);
+        List<SchoolRecord> records = loadRecords();
 
-            String normalizedSearch = normalize(search);
-            String normalizedRegion = normalize(region);
-            String normalizedArea = normalize(area);
-            String normalizedLocality = normalize(locality);
+        String normalizedSearch = normalize(search);
+        String normalizedRegion = normalize(region);
+        String normalizedArea = normalize(area);
+        String normalizedLocality = normalize(locality);
 
-            List<SchoolDtos.SchoolOption> schools = records.stream()
-                    .filter(record -> matchesEquals(normalizedRegion, record.normalizedRegion()))
-                    .filter(record -> matchesEquals(normalizedArea, record.normalizedArea()))
-                    .filter(record -> matchesEquals(normalizedLocality, record.normalizedLocality()))
-                    .filter(record -> matchesSearch(normalizedSearch, record))
-                    .sorted(Comparator.comparing(SchoolRecord::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                    .limit(resolvedLimit)
-                    .map(record -> new SchoolDtos.SchoolOption(
-                            record.id(),
-                            record.name(),
-                            record.region(),
-                            record.area(),
-                            record.locality()
-                    ))
-                    .toList();
+        List<SchoolDtos.SchoolOption> schools = records.stream()
+                .filter(record -> matchesEquals(normalizedRegion, record.normalizedRegion()))
+                .filter(record -> matchesEquals(normalizedArea, record.normalizedArea()))
+                .filter(record -> matchesEquals(normalizedLocality, record.normalizedLocality()))
+                .filter(record -> matchesSearch(normalizedSearch, record))
+                .sorted(Comparator.comparing(SchoolRecord::name, String.CASE_INSENSITIVE_ORDER))
+                .limit(resolvedLimit)
+                .map(record -> new SchoolDtos.SchoolOption(
+                        record.id(),
+                        record.name(),
+                        record.region(),
+                        record.area(),
+                        record.locality()
+                ))
+                .toList();
 
-            return new SchoolDtos.SchoolListResponse(schools);
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_PROCESSING_ERROR", "Cannot process schools directory response");
-        }
+        return new SchoolDtos.SchoolListResponse(schools);
     }
 
     public SchoolDtos.SchoolFilterOptionsResponse listFilterOptions(String region, String area) {
-        try {
-            List<SchoolRecord> records = loadRecords();
-            String normalizedRegion = normalize(region);
-            String normalizedArea = normalize(area);
+        List<SchoolRecord> records = loadRecords();
+        String normalizedRegion = normalize(region);
+        String normalizedArea = normalize(area);
 
-            Set<String> regions = new LinkedHashSet<>();
-            Set<String> areas = new LinkedHashSet<>();
-            Set<String> localities = new LinkedHashSet<>();
+        Set<String> regions = new LinkedHashSet<>();
+        Set<String> areas = new LinkedHashSet<>();
+        Set<String> localities = new LinkedHashSet<>();
 
-            for (SchoolRecord record : records) {
-                if (record.region() != null) {
-                    regions.add(record.region());
-                }
-
-                if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
-                    areas.add(record.area());
-                }
-
-                if (matchesEquals(normalizedRegion, record.normalizedRegion())
-                        && matchesEquals(normalizedArea, record.normalizedArea())
-                        && record.locality() != null) {
-                    localities.add(record.locality());
-                }
+        for (SchoolRecord record : records) {
+            if (record.region() != null) {
+                regions.add(record.region());
             }
 
-            return new SchoolDtos.SchoolFilterOptionsResponse(
-                    regions.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
-                    areas.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
-                    localities.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()
-            );
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_PROCESSING_ERROR", "Cannot process schools directory response");
+            if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
+                areas.add(record.area());
+            }
+
+            if (matchesEquals(normalizedRegion, record.normalizedRegion())
+                    && matchesEquals(normalizedArea, record.normalizedArea())
+                    && record.locality() != null) {
+                localities.add(record.locality());
+            }
         }
+
+        return new SchoolDtos.SchoolFilterOptionsResponse(
+                regions.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                areas.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
+                localities.stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()
+        );
     }
 
     private List<SchoolRecord> loadRecords() {
@@ -130,21 +118,17 @@ public class SchoolDirectoryService {
                 id = name;
             }
 
-            try {
-                records.add(new SchoolRecord(
-                        id,
-                        name,
-                        region,
-                        schoolArea,
-                        schoolLocality,
-                        normalize(name),
-                        normalize(region),
-                        normalize(schoolArea),
-                        normalize(schoolLocality)
-                ));
-            } catch (Exception ignored) {
-                // skip malformed row and continue parsing the rest of payload
-            }
+            records.add(new SchoolRecord(
+                    id,
+                    name,
+                    region,
+                    schoolArea,
+                    schoolLocality,
+                    normalize(name),
+                    normalize(region),
+                    normalize(schoolArea),
+                    normalize(schoolLocality)
+            ));
         }
 
         return records;
