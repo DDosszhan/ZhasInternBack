@@ -3,6 +3,8 @@ package com.production.ZhasIntern.Controller;
 import com.production.ZhasIntern.exception.ApiError;
 import com.production.ZhasIntern.exception.ApiException;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,10 +18,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class RestExceptionHandler {
 
     @org.springframework.web.bind.annotation.ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiError> handleApiException(ApiException ex) {
+    public ResponseEntity<ApiError> handleApiException(ApiException ex, HttpServletRequest request) {
+        log.warn("API exception on {} {}: code={}, message={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getCode(),
+                ex.getMessage());
         return ResponseEntity.status(ex.getStatus())
                 .body(ApiError.of(ex.getCode(), ex.getMessage(), ex.getDetails()));
     }
@@ -71,7 +79,8 @@ public class RestExceptionHandler {
     }
 
     @org.springframework.web.bind.annotation.ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnknown(Exception ex) {
+    public ResponseEntity<ApiError> handleUnknown(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return ResponseEntity.status(500)
                 .body(ApiError.of("INTERNAL_ERROR", "Unexpected server error"));
     }

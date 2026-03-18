@@ -85,6 +85,7 @@ public class SchoolDirectoryService {
             if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
                 areas.add(record.area());
             }
+        }
 
             if (matchesEquals(normalizedRegion, record.normalizedRegion())
                     && matchesEquals(normalizedArea, record.normalizedArea())
