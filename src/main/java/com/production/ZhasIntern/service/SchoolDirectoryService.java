@@ -54,7 +54,7 @@ public class SchoolDirectoryService {
                 .filter(record -> matchesEquals(normalizedArea, record.normalizedArea()))
                 .filter(record -> matchesEquals(normalizedLocality, record.normalizedLocality()))
                 .filter(record -> matchesSearch(normalizedSearch, record))
-                .sorted(Comparator.comparing(SchoolRecord::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .sorted(Comparator.comparing(SchoolRecord::name, String.CASE_INSENSITIVE_ORDER))
                 .limit(resolvedLimit)
                 .map(record -> new SchoolDtos.SchoolOption(
                         record.id(),
@@ -85,6 +85,7 @@ public class SchoolDirectoryService {
             if (matchesEquals(normalizedRegion, record.normalizedRegion()) && record.area() != null) {
                 areas.add(record.area());
             }
+        }
 
             if (matchesEquals(normalizedRegion, record.normalizedRegion())
                     && matchesEquals(normalizedArea, record.normalizedArea())
@@ -118,34 +119,23 @@ public class SchoolDirectoryService {
                 id = name;
             }
 
-            try {
-                records.add(new SchoolRecord(
-                        id,
-                        name,
-                        region,
-                        schoolArea,
-                        schoolLocality,
-                        normalize(name),
-                        normalize(region),
-                        normalize(schoolArea),
-                        normalize(schoolLocality)
-                ));
-            } catch (Exception ignored) {
-                // skip malformed row and continue parsing the rest of payload
-            }
+            records.add(new SchoolRecord(
+                    id,
+                    name,
+                    region,
+                    schoolArea,
+                    schoolLocality,
+                    normalize(name),
+                    normalize(region),
+                    normalize(schoolArea),
+                    normalize(schoolLocality)
+            ));
         }
 
         return records;
     }
 
     private JsonNode loadPayload() {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "EGOV_CONFIG_ERROR", "Schools directory base URL is not configured");
-        }
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "EGOV_CONFIG_ERROR", "Schools directory API key is not configured");
-        }
-
         String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("apiKey", apiKey)
                 .queryParam("limit", MAX_LIMIT)
