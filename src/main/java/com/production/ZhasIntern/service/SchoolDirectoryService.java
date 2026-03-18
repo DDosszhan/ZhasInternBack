@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.production.ZhasIntern.dto.SchoolDtos;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SchoolDirectoryService {
 
     private static final int DEFAULT_LIMIT = 100;
@@ -86,7 +88,6 @@ public class SchoolDirectoryService {
                 areas.add(record.area());
             }
 
-
             if (matchesEquals(normalizedRegion, record.normalizedRegion())
                     && matchesEquals(normalizedArea, record.normalizedArea())
                     && record.locality() != null) {
@@ -136,24 +137,61 @@ public class SchoolDirectoryService {
     }
 
     private JsonNode loadPayload() {
-        String url = UriComponentsBuilder.fromUriString(baseUrl)
-                .queryParam("apiKey", apiKey)
-                .queryParam("limit", MAX_LIMIT)
-                .encode(StandardCharsets.UTF_8)
-                .toUriString();
+        validateConfig();
 
-        JsonNode payload;
+        final String url;
+        try {
+            url = UriComponentsBuilder.fromUriString(baseUrl)
+                    .queryParam("apiKey", apiKey)
+                    .queryParam("limit", MAX_LIMIT)
+                    .encode(StandardCharsets.UTF_8)
+                    .toUriString();
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid EGOV schools URL configuration: {}", baseUrl, ex);
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "SCHOOL_DIRECTORY_CONFIG_ERROR", "Schools directory is not configured properly");
+        }
+
+        final JsonNode payload;
         try {
             payload = restTemplate.getForObject(url, JsonNode.class);
         } catch (RestClientException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_UNAVAILABLE", "Cannot load schools directory now");
         }
 
-        if (payload == null || !payload.isArray()) {
+        JsonNode recordsNode = resolveRecordsNode(payload);
+        if (recordsNode == null || !recordsNode.isArray()) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_BAD_RESPONSE", "Schools directory returned invalid payload");
         }
 
-        return payload;
+        return recordsNode;
+    }
+
+    private void validateConfig() {
+        if (baseUrl == null || baseUrl.isBlank() || apiKey == null || apiKey.isBlank()) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "SCHOOL_DIRECTORY_CONFIG_ERROR", "Schools directory is not configured properly");
+        }
+    }
+
+    private JsonNode resolveRecordsNode(JsonNode payload) {
+        if (payload == null) {
+            return null;
+        }
+        if (payload.isArray()) {
+            return payload;
+        }
+
+        // EGOV integrations sometimes wrap items in a container object.
+        JsonNode results = payload.get("results");
+        if (results != null && results.isArray()) {
+            return results;
+        }
+
+        JsonNode data = payload.get("data");
+        if (data != null && data.isArray()) {
+            return data;
+        }
+
+        return null;
     }
 
     private int sanitizeLimit(Integer limit) {
