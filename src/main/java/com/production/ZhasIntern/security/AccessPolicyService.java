@@ -38,6 +38,26 @@ public class AccessPolicyService {
         }
     }
 
+
+    public void requireAdmin(Jwt jwt) {
+        String userId = jwt.getSubject();
+
+        UserProfile profile = profileRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "NOT_FOUND",
+                        "Profile not found"
+                ));
+
+        if (profile.getRole() != UserRole.ADMIN) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "FORBIDDEN",
+                    "Admin role is required"
+            );
+        }
+    }
+
     public UserRole parseAllowedSelfSwitchRole(String rawRole) {
         if (rawRole == null || rawRole.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Role is required");
