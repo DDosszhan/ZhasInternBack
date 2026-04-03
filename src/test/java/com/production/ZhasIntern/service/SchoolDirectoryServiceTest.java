@@ -1,43 +1,55 @@
 package com.production.ZhasIntern.service;
 
-import com.production.ZhasIntern.exception.ApiException;
+import com.production.ZhasIntern.entity.School;
+import com.production.ZhasIntern.repository.SchoolRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SchoolDirectoryServiceTest {
 
+    private SchoolRepository schoolRepository;
     private SchoolDirectoryService service;
 
     @BeforeEach
     void setUp() {
-        service = new SchoolDirectoryService();
+        schoolRepository = mock(SchoolRepository.class);
+        service = new SchoolDirectoryService(schoolRepository);
     }
 
     @Test
-    void listSchoolsThrowsControlledErrorWhenDirectoryConfigMissing() {
-        ReflectionTestUtils.setField(service, "baseUrl", "");
-        ReflectionTestUtils.setField(service, "apiKey", "");
+    void listSchoolsRespectsLimit() {
+        when(schoolRepository.search(any(), any(), any(), any())).thenReturn(List.of(school("A"), school("B")));
 
-        ApiException ex = assertThrows(ApiException.class,
-                () -> service.listSchools(null, null, null, null, 10));
+        var response = service.listSchools(null, null, null, null, 1);
 
-        assertEquals("SCHOOL_DIRECTORY_CONFIG_ERROR", ex.getCode());
-        assertEquals(503, ex.getStatus().value());
+        assertEquals(1, response.schools().size());
     }
 
     @Test
-    void listSchoolsThrowsControlledErrorWhenBaseUrlMalformed() {
-        ReflectionTestUtils.setField(service, "baseUrl", "ht!tp:// badly formed");
-        ReflectionTestUtils.setField(service, "apiKey", "token");
+    void listRegionsDelegatesToRepository() {
+        when(schoolRepository.findDistinctRegionsRu()).thenReturn(List.of("Алматы", "Астана"));
 
-        ApiException ex = assertThrows(ApiException.class,
-                () -> service.listSchools(null, null, null, null, 10));
+        var response = service.listRegions();
 
-        assertEquals("SCHOOL_DIRECTORY_CONFIG_ERROR", ex.getCode());
-        assertEquals(503, ex.getStatus().value());
+        assertEquals(2, response.regions().size());
+        assertEquals("Алматы", response.regions().get(0));
+    }
+
+    private School school(String name) {
+        School school = new School();
+        school.setId(UUID.randomUUID());
+        school.setSchoolNameRu(name);
+        school.setRegionRu("Регион");
+        school.setDistrictRu("Район");
+        school.setLocalityRu("Город");
+        return school;
     }
 }
