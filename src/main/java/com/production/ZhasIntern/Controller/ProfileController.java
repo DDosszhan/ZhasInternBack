@@ -1,10 +1,14 @@
 package com.production.ZhasIntern.Controller;
 
 import com.production.ZhasIntern.dto.ProfileDtos;
+import com.production.ZhasIntern.entity.ManualSchoolRequest;
+import com.production.ZhasIntern.entity.School;
 import com.production.ZhasIntern.entity.UserProfile;
 import com.production.ZhasIntern.entity.UserRole;
 import com.production.ZhasIntern.exception.ApiException;
+import com.production.ZhasIntern.repository.ManualSchoolRequestRepository;
 import com.production.ZhasIntern.repository.ProfileRepository;
+import com.production.ZhasIntern.repository.SchoolRepository;
 import com.production.ZhasIntern.security.AccessPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +25,8 @@ public class ProfileController {
 
     private final ProfileRepository profileRepository;
     private final AccessPolicyService accessPolicyService;
+    private final SchoolRepository schoolRepository;
+    private final ManualSchoolRequestRepository manualSchoolRequestRepository;
 
     @PatchMapping("/role")
     public ProfileDtos.ProfileRoleResponse updateRole(
@@ -54,10 +60,15 @@ public class ProfileController {
 
         if (request.fullName() != null) profile.setFullName(clean(request.fullName()));
         if (request.bio() != null) profile.setBio(clean(request.bio()));
-        if (request.school() != null) profile.setSchool(clean(request.school()));
         if (request.grade() != null) profile.setGrade(clean(request.grade()));
         if (request.city() != null) profile.setCity(clean(request.city()));
         if (request.portfolio() != null) profile.setPortfolio(clean(request.portfolio()));
+
+        if (request.school() != null) {
+            profile.setSchool(clean(request.school()));
+        }
+
+        applySchoolChoice(profile, request);
 
         UserProfile saved = profileRepository.save(profile);
 
@@ -68,11 +79,59 @@ public class ProfileController {
                 saved.getSchool(),
                 saved.getGrade(),
                 saved.getCity(),
-                saved.getPortfolio()
+                saved.getPortfolio(),
+                saved.getSchoolEntity() != null ? saved.getSchoolEntity().getId().toString() : null,
+                saved.getManualSchoolName()
         );
     }
 
+    private void applySchoolChoice(UserProfile profile, ProfileDtos.UpdateStudentDetailsRequest request) {
+        String schoolIdRaw = clean(request.schoolId());
+        String manualSchoolName = clean(request.manualSchoolName());
+
+        if (schoolIdRaw == null && manualSchoolName == null) {
+            return;
+        }
+
+        if (schoolIdRaw != null && manualSchoolName != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Provide either schoolId or manualSchoolName, not both");
+        }
+
+        if (schoolIdRaw != null) {
+            UUID schoolId;
+            try {
+                schoolId = UUID.fromString(schoolIdRaw);
+            } catch (IllegalArgumentException ex) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "schoolId must be a valid UUID");
+            }
+
+            School school = schoolRepository.findById(schoolId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "School not found"));
+
+            profile.setSchoolEntity(school);
+            profile.setManualSchoolName(null);
+            profile.setSchool(school.getSchoolNameRu() != null ? school.getSchoolNameRu() : school.getSchoolNameKz());
+            return;
+        }
+
+        profile.setSchoolEntity(null);
+        profile.setManualSchoolName(manualSchoolName);
+        profile.setSchool(manualSchoolName);
+
+        ManualSchoolRequest manualRequest = new ManualSchoolRequest();
+        manualRequest.setUserId(profile.getId());
+        manualRequest.setRegion(clean(request.schoolRegion()));
+        manualRequest.setDistrict(clean(request.schoolDistrict()));
+        manualRequest.setLocality(clean(request.schoolLocality()));
+        manualRequest.setSchoolName(manualSchoolName);
+
+        manualSchoolRequestRepository.save(manualRequest);
+    }
+
     private String clean(String value) {
+        if (value == null) {
+            return null;
+        }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
     }
