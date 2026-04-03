@@ -10,7 +10,12 @@ public class ProfileDtos {
             String school,
             String grade,
             String city,
-            String portfolio
+            String portfolio,
+            String schoolId,
+            String manualSchoolName,
+            String schoolRegion,
+            String schoolDistrict,
+            String schoolLocality
     ) {}
 
     public record ProfileRoleResponse(
@@ -25,6 +30,8 @@ public class ProfileDtos {
             String school,
             String grade,
             String city,
-            String portfolio
+            String portfolio,
+            String schoolId,
+            String manualSchoolName
     ) {}
 }

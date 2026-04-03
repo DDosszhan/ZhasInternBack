@@ -25,6 +25,13 @@ public class UserProfile {
 
     private String school;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_id")
+    private School schoolEntity;
+
+    @Column(name = "manual_school_name", length = 500)
+    private String manualSchoolName;
+
     private String grade;
 
     private String city;
