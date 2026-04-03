@@ -3,18 +3,15 @@ package com.production.ZhasIntern.service;
 import com.production.ZhasIntern.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.net.URI;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -43,23 +40,18 @@ public class EgovSchoolClient {
 
         final String url;
         try {
-            String encodedApiKey = URLEncoder.encode(apiKey, StandardCharsets.UTF_8);
-            String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
-            String separator = baseUrl.contains("?") ? "&" : "?";
-            url = baseUrl + separator + "apiKey=" + encodedApiKey + "&source=" + encodedSource;
+            url = UriComponentsBuilder.fromUriString(baseUrl)
+                    .queryParam("apiKey", apiKey)
+                    .queryParam("source", source)
+                    .encode(StandardCharsets.UTF_8)
+                    .toUriString();
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "EGOV_CONFIG_ERROR", "Schools provider configuration is invalid");
         }
 
         final JsonNode payload;
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
-                    URI.create(url),
-                    HttpMethod.GET,
-                    null,
-                    JsonNode.class
-            );
-            payload = response.getBody();
+            payload = restTemplate.getForObject(url, JsonNode.class);
         } catch (RestClientException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_UNAVAILABLE", "Cannot load schools from EGOV now");
         }
