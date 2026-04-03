@@ -8,13 +8,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.web.util.UriUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
-import java.net.URI;
 import java.util.Map;
 
 @Component
@@ -42,12 +40,10 @@ public class EgovSchoolClient {
 
         final String url;
         try {
-            String encodedSource = UriUtils.encodeQueryParam(source, StandardCharsets.UTF_8);
             url = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("apiKey", apiKey)
-                    // We pass already encoded JSON to avoid Spring template expansion for `{...}`
-                    .queryParam("source", encodedSource)
-                    .build(true)
+                    .queryParam("source", source)
+                    .encode(StandardCharsets.UTF_8)
                     .toUriString();
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "EGOV_CONFIG_ERROR", "Schools provider configuration is invalid");
@@ -55,7 +51,7 @@ public class EgovSchoolClient {
 
         final JsonNode payload;
         try {
-            payload = restTemplate.getForObject(URI.create(url), JsonNode.class);
+            payload = restTemplate.getForObject(url, JsonNode.class);
         } catch (RestClientException ex) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "EGOV_UNAVAILABLE", "Cannot load schools from EGOV now");
         }
