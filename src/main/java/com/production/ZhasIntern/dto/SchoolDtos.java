@@ -43,9 +43,21 @@ public class SchoolDtos {
         }
     }
 
+    public record AreaListResponse(List<String> areas) {
+        public AreaListResponse {
+            areas = areas == null ? List.of() : areas;
+        }
+    }
+
     public record LocalityListResponse(List<String> localities) {
         public LocalityListResponse {
             localities = localities == null ? List.of() : localities;
+        }
+    }
+
+    public record SettlementListResponse(List<String> settlements) {
+        public SettlementListResponse {
+            settlements = settlements == null ? List.of() : settlements;
         }
     }
 }

@@ -31,12 +31,20 @@ public class SchoolDirectoryService {
         String normalizedDistrict = normalize(district);
         String normalizedLocality = normalize(locality);
 
-        List<SchoolDtos.SchoolOption> schools = schoolRepository.search(
+        List<School> matchedSchools = normalizedSearch == null
+                ? schoolRepository.findByFilters(
+                        normalizedRegion,
+                        normalizedDistrict,
+                        normalizedLocality
+                )
+                : schoolRepository.searchByFilters(
                         normalizedSearch,
                         normalizedRegion,
                         normalizedDistrict,
                         normalizedLocality
-                ).stream()
+                );
+
+        List<SchoolDtos.SchoolOption> schools = matchedSchools.stream()
                 .limit(resolvedLimit)
                 .map(this::toOption)
                 .toList();
@@ -63,9 +71,19 @@ public class SchoolDirectoryService {
         return new SchoolDtos.DistrictListResponse(schoolRepository.findDistinctDistrictsRu(normalize(region)));
     }
 
+    public SchoolDtos.AreaListResponse listAreas(String region) {
+        return new SchoolDtos.AreaListResponse(schoolRepository.findDistinctDistrictsRu(normalize(region)));
+    }
+
     public SchoolDtos.LocalityListResponse listLocalities(String region, String district) {
         return new SchoolDtos.LocalityListResponse(
                 schoolRepository.findDistinctLocalitiesRu(normalize(region), normalize(district))
+        );
+    }
+
+    public SchoolDtos.SettlementListResponse listSettlements(String region, String area) {
+        return new SchoolDtos.SettlementListResponse(
+                schoolRepository.findDistinctLocalitiesRu(normalize(region), normalize(area))
         );
     }
 

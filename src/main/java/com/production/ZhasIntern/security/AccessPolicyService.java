@@ -19,15 +19,18 @@ public class AccessPolicyService {
 
     private final ProfileRepository profileRepository;
 
-    public void requireEmployer(Jwt jwt) {
+    public UserProfile requireCurrentProfile(Jwt jwt) {
         String userId = jwt.getSubject();
-
-        UserProfile profile = profileRepository.findById(UUID.fromString(userId))
+        return profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "NOT_FOUND",
                         "Profile not found"
                 ));
+    }
+
+    public void requireEmployer(Jwt jwt) {
+        UserProfile profile = requireCurrentProfile(jwt);
 
         if (profile.getRole() != UserRole.EMPLOYER) {
             throw new ApiException(
@@ -40,14 +43,7 @@ public class AccessPolicyService {
 
 
     public void requireAdmin(Jwt jwt) {
-        String userId = jwt.getSubject();
-
-        UserProfile profile = profileRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.NOT_FOUND,
-                        "NOT_FOUND",
-                        "Profile not found"
-                ));
+        UserProfile profile = requireCurrentProfile(jwt);
 
         if (profile.getRole() != UserRole.ADMIN) {
             throw new ApiException(
@@ -56,6 +52,52 @@ public class AccessPolicyService {
                     "Admin role is required"
             );
         }
+    }
+
+    public void requireStudent(Jwt jwt) {
+        UserProfile profile = requireCurrentProfile(jwt);
+
+        if (profile.getRole() != UserRole.STUDENT) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "FORBIDDEN",
+                    "Student role is required"
+            );
+        }
+    }
+
+    public void requireCounselorApprover(Jwt jwt) {
+        UserProfile profile = requireCurrentProfile(jwt);
+
+        if (profile.getRole() != UserRole.COUNSELOR_APPROVER && profile.getRole() != UserRole.ADMIN) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "FORBIDDEN",
+                    "Counselor approver role is required"
+            );
+        }
+    }
+
+    public UserProfile requireApprovedSchoolCounselor(Jwt jwt) {
+        UserProfile profile = requireCurrentProfile(jwt);
+
+        if (profile.getRole() != UserRole.SCHOOL_COUNSELOR) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "FORBIDDEN",
+                    "School counselor role is required"
+            );
+        }
+
+        if (!profile.isSchoolCounselorVerified()) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "COUNSELOR_NOT_VERIFIED",
+                    "School counselor account is not verified yet"
+            );
+        }
+
+        return profile;
     }
 
     public UserRole parseAllowedSelfSwitchRole(String rawRole) {
@@ -71,15 +113,15 @@ public class AccessPolicyService {
                     HttpStatus.BAD_REQUEST,
                     "VALIDATION_ERROR",
                     "Invalid role",
-                    Map.of("allowedRoles", new String[]{"STUDENT", "EMPLOYER"})
+                    Map.of("allowedRoles", new String[]{"STUDENT", "EMPLOYER", "SCHOOL_COUNSELOR"})
             );
         }
 
-        if (role == UserRole.ADMIN) {
+        if (role == UserRole.ADMIN || role == UserRole.COUNSELOR_APPROVER) {
             throw new ApiException(
                     HttpStatus.FORBIDDEN,
                     "FORBIDDEN",
-                    "You cannot assign ADMIN role to yourself"
+                    "You cannot assign this role to yourself"
             );
         }
 

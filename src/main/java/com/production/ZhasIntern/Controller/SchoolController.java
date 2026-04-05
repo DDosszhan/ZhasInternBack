@@ -50,6 +50,13 @@ public class SchoolController {
         return schoolDirectoryService.listDistricts(region);
     }
 
+    @GetMapping("/areas")
+    public SchoolDtos.AreaListResponse listAreas(
+            @RequestParam(required = false) String region
+    ) {
+        return schoolDirectoryService.listAreas(region);
+    }
+
     @GetMapping("/localities")
     public SchoolDtos.LocalityListResponse listLocalities(
             @RequestParam(required = false) String region,
@@ -58,5 +65,15 @@ public class SchoolController {
     ) {
         String resolvedDistrict = district != null ? district : area;
         return schoolDirectoryService.listLocalities(region, resolvedDistrict);
+    }
+
+    @GetMapping("/settlements")
+    public SchoolDtos.SettlementListResponse listSettlements(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String area
+    ) {
+        String resolvedArea = area != null ? area : district;
+        return schoolDirectoryService.listSettlements(region, resolvedArea);
     }
 }

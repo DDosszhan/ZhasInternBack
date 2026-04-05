@@ -10,6 +10,7 @@ public class StudentProfileDtos {
             UUID id,
             String fullName,
             String bio,
+            String phone,
             String school,
             String grade,
             String city,

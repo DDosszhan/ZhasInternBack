@@ -19,6 +19,7 @@ public class StudentProfileService {
 
     private final ProfileRepository profileRepository;
     private final ApplicationRepository applicationRepository;
+    private final SchoolCounselorService schoolCounselorService;
 
     public StudentProfileDtos.StudentProfileResponse getStudentProfile(UUID studentId, String currentUserId) {
         UserProfile currentUserProfile = profileRepository.findById(UUID.fromString(currentUserId))
@@ -30,6 +31,9 @@ public class StudentProfileService {
         if (currentUserProfile.getRole() == UserRole.EMPLOYER) {
             canAccess = applicationRepository.existsEmployerAccessToStudent(currentUserId, studentId.toString());
         } else if (currentUserProfile.getRole() == UserRole.STUDENT && isSelf) {
+            canAccess = true;
+        } else if (currentUserProfile.getRole() == UserRole.SCHOOL_COUNSELOR && currentUserProfile.isSchoolCounselorVerified()) {
+            schoolCounselorService.ensureCounselorCanAccessStudent(currentUserProfile, studentId);
             canAccess = true;
         }
 
@@ -44,6 +48,7 @@ public class StudentProfileService {
                 studentProfile.getId(),
                 studentProfile.getFullName(),
                 studentProfile.getBio(),
+                studentProfile.getPhone(),
                 studentProfile.getSchool(),
                 studentProfile.getGrade(),
                 studentProfile.getCity(),

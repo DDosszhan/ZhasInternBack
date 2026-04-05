@@ -1,9 +1,9 @@
 package com.production.ZhasIntern.entity;
 
+import com.production.ZhasIntern.config.ApplicationAnswersJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -33,7 +33,8 @@ public class Application {
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
     // ✅ Proper jsonb mapping (Hibernate will bind it as JSON, not varchar)
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Convert(converter = ApplicationAnswersJsonConverter.class)
+    @ColumnTransformer(write = "?::jsonb")
     @Column(name = "answers", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> answers = new HashMap<>();
 

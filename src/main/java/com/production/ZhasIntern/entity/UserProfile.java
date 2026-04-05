@@ -18,6 +18,8 @@ public class UserProfile {
 
     private String fullName;
 
+    private String phone;
+
     @Enumerated(EnumType.STRING)
     private UserRole role; // STUDENT или EMPLOYER
 
@@ -37,6 +39,12 @@ public class UserProfile {
     private String city;
 
     private String portfolio;
+
+    @Column(name = "school_counselor_verified", nullable = false)
+    private boolean schoolCounselorVerified = false;
+
+    @Column(name = "school_counselor_verified_at")
+    private Instant schoolCounselorVerifiedAt;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

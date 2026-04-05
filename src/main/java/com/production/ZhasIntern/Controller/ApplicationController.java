@@ -27,6 +27,7 @@ public class ApplicationController {
             @PathVariable("id") UUID internshipId,
             @RequestBody(required = false) ApplicationDtos.CreateRequest req
     ) {
+        accessPolicyService.requireStudent(jwt);
         String studentId = jwt.getSubject();
         return applicationService.apply(studentId, internshipId, req);
     }

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,8 +19,11 @@ public class AdminSchoolController {
     private final SchoolImportService schoolImportService;
 
     @PostMapping("/import")
-    public SchoolImportService.SchoolImportResult importSchools(@AuthenticationPrincipal Jwt jwt) {
+    public SchoolImportService.SchoolImportResult importSchools(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(name = "from", defaultValue = "0") int from
+    ) {
         accessPolicyService.requireAdmin(jwt);
-        return schoolImportService.importFromEgovV3();
+        return schoolImportService.importFromEgovV3(from);
     }
 }

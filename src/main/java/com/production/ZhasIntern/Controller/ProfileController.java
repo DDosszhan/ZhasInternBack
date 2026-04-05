@@ -40,6 +40,8 @@ public class ProfileController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Profile not found"));
 
         profile.setRole(role);
+        profile.setSchoolCounselorVerified(false);
+        profile.setSchoolCounselorVerifiedAt(null);
         profileRepository.save(profile);
 
         return new ProfileDtos.ProfileRoleResponse(userId, role.name());
@@ -54,12 +56,13 @@ public class ProfileController {
         UserProfile profile = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Profile not found"));
 
-        if (profile.getRole() == UserRole.EMPLOYER) {
+        if (profile.getRole() != UserRole.STUDENT) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Only student profile can be updated here");
         }
 
         if (request.fullName() != null) profile.setFullName(clean(request.fullName()));
         if (request.bio() != null) profile.setBio(clean(request.bio()));
+        if (request.phone() != null) profile.setPhone(clean(request.phone()));
         if (request.grade() != null) profile.setGrade(clean(request.grade()));
         if (request.city() != null) profile.setCity(clean(request.city()));
         if (request.portfolio() != null) profile.setPortfolio(clean(request.portfolio()));
@@ -69,6 +72,7 @@ public class ProfileController {
         }
 
         applySchoolChoice(profile, request);
+        validateStudentSchoolSelection(profile);
 
         UserProfile saved = profileRepository.save(profile);
 
@@ -76,12 +80,16 @@ public class ProfileController {
                 saved.getId().toString(),
                 saved.getFullName(),
                 saved.getBio(),
+                saved.getPhone(),
                 saved.getSchool(),
                 saved.getGrade(),
                 saved.getCity(),
                 saved.getPortfolio(),
                 saved.getSchoolEntity() != null ? saved.getSchoolEntity().getId().toString() : null,
-                saved.getManualSchoolName()
+                saved.getManualSchoolName(),
+                saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getRegionRu()) : null,
+                saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getDistrictRu()) : null,
+                saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getLocalityRu()) : null
         );
     }
 
@@ -126,6 +134,15 @@ public class ProfileController {
         manualRequest.setSchoolName(manualSchoolName);
 
         manualSchoolRequestRepository.save(manualRequest);
+    }
+
+    private void validateStudentSchoolSelection(UserProfile profile) {
+        boolean hasSelectedSchool = profile.getSchoolEntity() != null;
+        boolean hasManualSchool = profile.getManualSchoolName() != null && !profile.getManualSchoolName().isBlank();
+
+        if (!hasSelectedSchool && !hasManualSchool) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Student must select a school or provide a manual school name");
+        }
     }
 
     private String clean(String value) {
