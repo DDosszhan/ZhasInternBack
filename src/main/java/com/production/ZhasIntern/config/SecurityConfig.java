@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internships/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internships/public").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
@@ -107,10 +108,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
         c.setAllowCredentials(true);
-        c.setAllowedOrigins(List.of("http://localhost:5173"));
-        c.setAllowedOrigins(List.of("zhas-intern-front-end.vercel.app"));
+        c.setAllowedOriginPatterns(List.of(
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "https://zhas-intern-front-end.vercel.app",
+                "https://*.vercel.app"
+        ));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        c.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        c.setAllowedHeaders(List.of("*"));
         c.setExposedHeaders(List.of("Location"));
 
         UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
