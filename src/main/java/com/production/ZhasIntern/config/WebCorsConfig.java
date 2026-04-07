@@ -15,7 +15,8 @@ public class WebCorsConfig implements WebMvcConfigurer {
                         "https://localhost:5173",
                         "https://zhas-intern-front-end.vercel.app",
                         "https://*.vercel.app",
-                        "https://zhasintern.kz"
+                        "https://zhasintern.kz",
+                        "https://www.zhasintern.kz"
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
