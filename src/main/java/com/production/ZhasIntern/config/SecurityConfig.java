@@ -112,7 +112,8 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "https://localhost:5173",
                 "https://zhas-intern-front-end.vercel.app",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://zhasintern.kz"
         ));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("*"));
