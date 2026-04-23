@@ -20,6 +20,7 @@ public class StudentProfileService {
     private final ProfileRepository profileRepository;
     private final ApplicationRepository applicationRepository;
     private final SchoolCounselorService schoolCounselorService;
+    private final StoredFileService storedFileService;
 
     public StudentProfileDtos.StudentProfileResponse getStudentProfile(UUID studentId, String currentUserId) {
         UserProfile currentUserProfile = profileRepository.findById(UUID.fromString(currentUserId))
@@ -54,6 +55,7 @@ public class StudentProfileService {
                 studentProfile.getCity(),
                 studentProfile.getPortfolio(),
                 studentProfile.getEmail(),
+                storedFileService.resolveProfilePhotoUrl(studentProfile.getProfilePhotoFileId()),
                 List.of(),
                 studentProfile.getCreatedAt()
         );

@@ -40,6 +40,9 @@ public class UserProfile {
 
     private String portfolio;
 
+    @Column(name = "profile_photo_file_id")
+    private UUID profilePhotoFileId;
+
     @Column(name = "school_counselor_verified", nullable = false)
     private boolean schoolCounselorVerified = false;
 

@@ -16,6 +16,7 @@ public class StudentProfileDtos {
             String city,
             String portfolio,
             String email,
+            String profilePhotoUrl,
             List<String> skills,
             Instant createdAt
     ) {}

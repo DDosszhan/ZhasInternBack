@@ -1,9 +1,7 @@
 package com.production.ZhasIntern.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public class ApplicationMessageDtos {
@@ -15,12 +13,12 @@ public class ApplicationMessageDtos {
             String senderRole,
             String senderName,
             String body,
+            List<FileDtos.AttachmentItem> attachments,
             Instant createdAt
     ) {}
 
     public record CreateChatMessageRequest(
-            @NotBlank(message = "body is required")
-            @Size(max = 4000, message = "body max length is 4000")
-            String body
+            String body,
+            List<UUID> attachmentIds
     ) {}
 }

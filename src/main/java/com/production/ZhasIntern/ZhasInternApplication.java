@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class ZhasInternApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ZhasInternApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(ZhasInternApplication.class, args);
+    }
 }

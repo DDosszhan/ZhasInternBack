@@ -1,7 +1,9 @@
 package com.production.ZhasIntern.Controller;
 
 import com.production.ZhasIntern.dto.ApplicationMessageDtos;
+import com.production.ZhasIntern.dto.FileDtos;
 import com.production.ZhasIntern.service.ApplicationMessageService;
+import com.production.ZhasIntern.service.StoredFileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class ApplicationMessageController {
 
     private final ApplicationMessageService applicationMessageService;
+    private final StoredFileService storedFileService;
 
     @GetMapping
     public List<ApplicationMessageDtos.ChatMessageItem> listMessages(
@@ -35,5 +38,24 @@ public class ApplicationMessageController {
             @RequestBody @Valid ApplicationMessageDtos.CreateChatMessageRequest request
     ) {
         return applicationMessageService.createMessage(applicationId, jwt.getSubject(), request);
+    }
+
+    @PostMapping("/attachments/upload-url")
+    @ResponseStatus(HttpStatus.CREATED)
+    public FileDtos.UploadTargetResponse createAttachmentUploadUrl(
+            @PathVariable UUID applicationId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid FileDtos.InitiateUploadRequest request
+    ) {
+        return storedFileService.createApplicationAttachmentUploadTarget(applicationId, jwt.getSubject(), request);
+    }
+
+    @PostMapping("/attachments/{fileId}/complete")
+    public FileDtos.CompleteUploadResponse completeAttachmentUpload(
+            @PathVariable UUID applicationId,
+            @PathVariable UUID fileId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return storedFileService.completeApplicationAttachmentUpload(applicationId, fileId, jwt.getSubject());
     }
 }

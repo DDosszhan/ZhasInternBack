@@ -24,6 +24,23 @@ public class ProfileDtos {
             String role
     ) {}
 
+    public record MeResponse(
+            String userId,
+            String email,
+            String fullName,
+            String role,
+            String bio,
+            String phone,
+            String school,
+            String grade,
+            String city,
+            String portfolio,
+            String schoolId,
+            String manualSchoolName,
+            boolean schoolCounselorVerified,
+            String profilePhotoUrl
+    ) {}
+
     public record StudentDetailsResponse(
             String userId,
             String fullName,
@@ -37,6 +54,7 @@ public class ProfileDtos {
             String manualSchoolName,
             String schoolRegion,
             String schoolDistrict,
-            String schoolLocality
+            String schoolLocality,
+            String profilePhotoUrl
     ) {}
 }

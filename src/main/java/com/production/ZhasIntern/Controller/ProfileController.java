@@ -1,6 +1,7 @@
 package com.production.ZhasIntern.Controller;
 
 import com.production.ZhasIntern.dto.ProfileDtos;
+import com.production.ZhasIntern.dto.FileDtos;
 import com.production.ZhasIntern.entity.ManualSchoolRequest;
 import com.production.ZhasIntern.entity.School;
 import com.production.ZhasIntern.entity.UserProfile;
@@ -10,6 +11,7 @@ import com.production.ZhasIntern.repository.ManualSchoolRequestRepository;
 import com.production.ZhasIntern.repository.ProfileRepository;
 import com.production.ZhasIntern.repository.SchoolRepository;
 import com.production.ZhasIntern.security.AccessPolicyService;
+import com.production.ZhasIntern.service.StoredFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +29,31 @@ public class ProfileController {
     private final AccessPolicyService accessPolicyService;
     private final SchoolRepository schoolRepository;
     private final ManualSchoolRequestRepository manualSchoolRequestRepository;
+    private final StoredFileService storedFileService;
+
+    @GetMapping("/me")
+    public ProfileDtos.MeResponse getCurrentProfile(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        UserProfile profile = profileRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Profile not found"));
+
+        return new ProfileDtos.MeResponse(
+                profile.getId().toString(),
+                profile.getEmail(),
+                profile.getFullName(),
+                profile.getRole() != null ? profile.getRole().name() : null,
+                profile.getBio(),
+                profile.getPhone(),
+                profile.getSchool(),
+                profile.getGrade(),
+                profile.getCity(),
+                profile.getPortfolio(),
+                profile.getSchoolEntity() != null ? profile.getSchoolEntity().getId().toString() : null,
+                profile.getManualSchoolName(),
+                profile.isSchoolCounselorVerified(),
+                storedFileService.resolveCurrentUserProfilePhotoUrl(profile.getProfilePhotoFileId(), userId)
+        );
+    }
 
     @PatchMapping("/role")
     public ProfileDtos.ProfileRoleResponse updateRole(
@@ -89,8 +116,26 @@ public class ProfileController {
                 saved.getManualSchoolName(),
                 saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getRegionRu()) : null,
                 saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getDistrictRu()) : null,
-                saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getLocalityRu()) : null
+                saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getLocalityRu()) : null,
+                storedFileService.resolveProfilePhotoUrl(saved.getProfilePhotoFileId())
         );
+    }
+
+    @PostMapping("/photo/upload-url")
+    @ResponseStatus(HttpStatus.CREATED)
+    public FileDtos.UploadTargetResponse createProfilePhotoUploadUrl(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @jakarta.validation.Valid FileDtos.InitiateUploadRequest request
+    ) {
+        return storedFileService.createProfilePhotoUploadTarget(jwt.getSubject(), request);
+    }
+
+    @PostMapping("/photo/{fileId}/complete")
+    public FileDtos.CompleteUploadResponse completeProfilePhotoUpload(
+            @PathVariable UUID fileId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return storedFileService.completeProfilePhotoUpload(fileId, jwt.getSubject());
     }
 
     private void applySchoolChoice(UserProfile profile, ProfileDtos.UpdateStudentDetailsRequest request) {

@@ -3,14 +3,16 @@ server:
     uri-encoding: UTF-8
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: internship-backend
 
   datasource:
     # Замени на свои данные из Supabase
-    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
-    username: postgres.gexxcdtarifagzqjmvbu
-    password: 135792468dosZhAn!
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -29,7 +31,21 @@ spring:
 integrations:
   egov-schools:
     base-url: https://data.egov.kz/api/v4/onirler_oblystar_kalalar_boi4/v3
-    api-key: 6a12931d7ce1433485f4e1b4f1f83929
+    api-key: ${EGOV_SCHOOLS_API_KEY}
   kato:
     base-url: https://data.egov.kz/api/v4/kato/data
-    api-key: 6a12931d7ce1433485f4e1b4f1f83929
+    api-key: ${KATO_API_KEY}
+
+app:
+  storage:
+    s3-endpoint: ${SUPABASE_STORAGE_S3_ENDPOINT:https://gexxcdtarifagzqjmvbu.storage.supabase.co/storage/v1/s3}
+    region: ${SUPABASE_STORAGE_REGION:ap-northeast-2}
+    access-key: ${SUPABASE_STORAGE_ACCESS_KEY:}
+    secret-key: ${SUPABASE_STORAGE_SECRET_KEY:}
+    profile-photos-bucket: ${SUPABASE_PROFILE_PHOTOS_BUCKET:profile-photos}
+    application-files-bucket: ${SUPABASE_APPLICATION_FILES_BUCKET:application-files}
+    profile-photos-public: ${SUPABASE_PROFILE_PHOTOS_PUBLIC:true}
+    upload-url-duration: ${SUPABASE_UPLOAD_URL_DURATION:15m}
+    download-url-duration: ${SUPABASE_DOWNLOAD_URL_DURATION:15m}
+    profile-photo-max-bytes: ${SUPABASE_PROFILE_PHOTO_MAX_BYTES:10485760}
+    application-file-max-bytes: ${SUPABASE_APPLICATION_FILE_MAX_BYTES:10485760}
