@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internships/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internships/public").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/support/contact").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
