@@ -48,6 +48,9 @@ public class ProfileController {
                 profile.getGrade(),
                 profile.getCity(),
                 profile.getPortfolio(),
+                profile.getInterests(),
+                profile.getSkills(),
+                profile.getPreferredFormat(),
                 profile.getSchoolEntity() != null ? profile.getSchoolEntity().getId().toString() : null,
                 profile.getManualSchoolName(),
                 profile.isSchoolCounselorVerified(),
@@ -93,6 +96,9 @@ public class ProfileController {
         if (request.grade() != null) profile.setGrade(clean(request.grade()));
         if (request.city() != null) profile.setCity(clean(request.city()));
         if (request.portfolio() != null) profile.setPortfolio(clean(request.portfolio()));
+        if (request.interests() != null) profile.setInterests(clean(request.interests()));
+        if (request.skills() != null) profile.setSkills(clean(request.skills()));
+        if (request.preferredFormat() != null) profile.setPreferredFormat(clean(request.preferredFormat()));
 
         if (request.school() != null) {
             profile.setSchool(clean(request.school()));
@@ -112,6 +118,9 @@ public class ProfileController {
                 saved.getGrade(),
                 saved.getCity(),
                 saved.getPortfolio(),
+                saved.getInterests(),
+                saved.getSkills(),
+                saved.getPreferredFormat(),
                 saved.getSchoolEntity() != null ? saved.getSchoolEntity().getId().toString() : null,
                 saved.getManualSchoolName(),
                 saved.getSchoolEntity() != null ? clean(saved.getSchoolEntity().getRegionRu()) : null,

@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public interface InternshipRepository extends JpaRepository<Internship, UUID> {
     Page<Internship> findByStatusOrderByPublishedAtDesc(Internship.Status status, Pageable pageable);
+    List<Internship> findByStatusOrderByPublishedAtDesc(Internship.Status status);
     Optional<Internship> findByIdAndStatus(UUID id, Internship.Status status);
 
     Page<Internship> findByEmployerIdOrderByCreatedAtDesc(String employerId, Pageable pageable);

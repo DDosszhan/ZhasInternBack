@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,8 +57,20 @@ public class StudentProfileService {
                 studentProfile.getPortfolio(),
                 studentProfile.getEmail(),
                 storedFileService.resolveProfilePhotoUrl(studentProfile.getProfilePhotoFileId()),
-                List.of(),
+                splitList(studentProfile.getSkills()),
+                splitList(studentProfile.getInterests()),
+                studentProfile.getPreferredFormat(),
                 studentProfile.getCreatedAt()
         );
+    }
+
+    private List<String> splitList(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(raw.split("[,;\\n]"))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
     }
 }

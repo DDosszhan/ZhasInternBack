@@ -40,6 +40,15 @@ public class UserProfile {
 
     private String portfolio;
 
+    @Column(columnDefinition = "text")
+    private String interests;
+
+    @Column(columnDefinition = "text")
+    private String skills;
+
+    @Column(length = 30)
+    private String preferredFormat;
+
     @Column(name = "profile_photo_file_id")
     private UUID profilePhotoFileId;
 

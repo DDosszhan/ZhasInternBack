@@ -18,6 +18,8 @@ public class StudentProfileDtos {
             String email,
             String profilePhotoUrl,
             List<String> skills,
+            List<String> interests,
+            String preferredFormat,
             Instant createdAt
     ) {}
 }
